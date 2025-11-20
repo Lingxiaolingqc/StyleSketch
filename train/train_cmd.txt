@@ -1,0 +1,1 @@
+python train.py --exp experiments/pseudoface3.json --save_final True --start_step 0 --num_sample 30 --train_data Disney_sketch_MJ 
