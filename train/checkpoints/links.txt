@@ -1,0 +1,2 @@
+bisenet: https://github.com/zllrunning/face-parsing.PyTorch
+stylegan-ffhq-1024*1024: https://drive.google.com/file/d/1X--a491Q6reEBV50XfyYqQ86yDxI44nd/view?usp=drive_link
