@@ -1,8 +1,8 @@
 {
   "exp_dir": "model_dir/stylesketch_model",
-  "batch_size": 1,
+  "batch_size": 3,
   "dim": [1024, 1024],
-  "max_training": 16,
+  "max_training": 33,
   "ada_augment" : true,
   "d_regularize" :true,
   "annotation_data_from_w": true,
