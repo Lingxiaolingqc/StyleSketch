@@ -47,7 +47,19 @@ def generate_data(args, name_train_style="Disney_sketch_MJ"):
     generator = parallelize(generator)
     
     checkpoint = torch.load(os.path.join(checkpoint_path, f'model_{name_train_style}.pth'))
-    generator.load_state_dict(checkpoint['model_state_dict'],strict =True)
+
+    state_dict=checkpoint['model_state_dict']
+    new_state_dict={}
+    
+    #change
+    for k,v  in state_dict.items():
+        if k.startswith("module."):
+            name=k[7:]
+        else:
+            name=k
+        new_state_dict[name]=v
+    #change
+    generator.load_state_dict(new_state_dict,strict =True)
     generator.eval()
 
     with torch.no_grad():
