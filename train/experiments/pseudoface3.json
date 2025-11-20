@@ -13,5 +13,5 @@
   "stylegan_checkpoint": "https://api.ngc.nvidia.com/v2/models/nvidia/research/stylegan2/versions/1/files/stylegan2-ffhq-1024x1024.pkl",
   "stylesketch_path":"./model_dir/stylesketch_model",
   "model_num": 1,
-  "Start_iteration": 0
+  "start_iteration": 0
 } 
