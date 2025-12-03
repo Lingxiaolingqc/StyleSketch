@@ -132,6 +132,7 @@ def prepare_data(args):
         try:
             sketch_img = Image.open(os.path.join( args['annotation_sketch_path'] , name)).convert('L')
         except:
+            print(f"Open {os.path.join( args['annotation_sketch_path'] , name)} failed")
             continue
         print(name)
         sketch_bw = np.array( sketch_img )
@@ -214,7 +215,7 @@ def main(args):
         elif(MODEL_NUMBER%7==1):
             LAMBDA_L1_else = 0
             LAMBDA_Clip_gts_full = 50
-            LAMBDA_VGG_gts_full = 0.4
+            LAMBDA_VGG_gts_full = 0.6
             LAMBDA_VGG_gts_comp=LAMBDA_VGG_gts_full
             LAMBDA_GEN_hair = LAMBDA_GEN_full
             LAMBDA_Clip_gts_hair = 0
@@ -234,8 +235,8 @@ def main(args):
         
         
         
-        LEARNINGRATE_G = 0.00014
-        LEARNINGRATE_D = 0.00014
+        LEARNINGRATE_G = 0.000014
+        LEARNINGRATE_D = 0.000014
 
         
         print("MODEL NUM : " + str(MODEL_NUMBER) + " LAMBDA_GEN : " + str(LAMBDA_GEN_full) +"LAMBDA_GEN_full "+ str(LAMBDA_Clip_gts_full) +" LAMBDA_VGG : "+ str(LAMBDA_VGG_gts_full))
@@ -288,10 +289,12 @@ def main(args):
         start_iter = args.get('start_iteration', 0)
 
         if start_iter > 0:
-            checkpoint = torch.load(os.path.join(
+            cppath=os.path.join(
                             args['exp_dir'], 
                             f"model_iter{start_iter}_number{MODEL_NUMBER}{opts['train_data']}.pth"
-                        ))
+                        )
+            checkpoint = torch.load(cppath)
+            print("\n     Loading generator checkpoint:", cppath)
 
             state_dict=checkpoint['model_state_dict']
             new_state_dict={}
@@ -309,7 +312,7 @@ def main(args):
                 args['exp_dir'],
                 f"other_iter{start_iter}_number{MODEL_NUMBER}{opts['train_data']}.pth"
             )
-            print("Loading checkpoint:", ckpt_path)
+            print("\n     Loading other checkpoint:", ckpt_path)
             ckpt = torch.load(ckpt_path)
 
 
@@ -343,13 +346,19 @@ def main(args):
         discriminator_face.train()
 
 
-        TOTAL_EPOCH=1600
+        TOTAL_EPOCH=1100
         ada_aug_step = 0.6/22400
         optimizer.zero_grad()
         optimizer_dis.zero_grad()
         r_t_stat=0
         #1500 epoch w/o early stop  
+
+        wantepoch=TOTAL_EPOCH-start_iter//7
+        runedepoch=0
         for epoch in range(start_epoch,TOTAL_EPOCH):
+            # runedepoch+=1
+            # if runedepoch>wantepoch:
+            #     break
             gc.collect()
             torch.cuda.empty_cache()
 
@@ -495,8 +504,8 @@ def main(args):
                 loss = gen_loss_else  +gts_clip_loss_else +  gts_vgg_loss_else
                 
                 
-                if training_l1 and epoch<TOTAL_EPOCH//4:
-                    loss+=criterion(y_pred,y_batch)*80
+                if training_l1 and epoch<TOTAL_EPOCH//5:
+                    loss+=criterion(y_pred,y_batch)*20
                 loss.backward()
 
 
@@ -603,14 +612,14 @@ def main(args):
                 # save interm
                 if iteration % 25 ==0:
                     add_dict={"aug_p ":ada_aug_p,"genE ": gen_loss_else.item(),  " gts_clipE ": gts_clip_loss_else.item()," gts_vggE ": gts_vgg_loss_else.item(),  "disc ": d_loss.item()}
-                    writer.add_scalars("sketch_split1_back_{}".format(MODEL_NUMBER), add_dict, epoch)
+                    writer.add_scalars("sketch_split1_back_{}".format(MODEL_NUMBER), add_dict, iteration)
                 if iteration % 100 == 0:
                     print("iter ",iteration,"Else : genE : ", gen_loss_else.item(),  " gts_clipE : ", gts_clip_loss_else.item()," gts_vggE : ", gts_vgg_loss_else.item(),"  disc : ", d_loss.item())
                     torchvision.utils.save_image(y_pred[0], 'img_during_training/{}img{}_gen_pred{}.png'.format(MODEL_NUMBER,iteration,opts['train_data']))
                     torchvision.utils.save_image(y_batch[0], 'img_during_training/{}img{}_ori_pred{}.png'.format(MODEL_NUMBER,iteration,opts['train_data']))
                     torchvision.utils.save_image(X_batch[-1][0]/255, 'img_during_training/{}img{}_ori_color.png'.format(MODEL_NUMBER,iteration))
                     print("ada_aug_p ",ada_aug_p," l1 ", criterion(y_pred,y_batch))
-                if iteration % 500 == 0:
+                if iteration % 100 == 0:
                     print('checkpoint, Epoch : ', str(epoch))
 
                     model_path = os.path.join(
@@ -666,13 +675,14 @@ if __name__ == '__main__':
 
     opts = json.load(open(args.exp, 'r'))
         
-    print("Opt", opts)
 
     if args.exp_dir != "":
         opts['exp_dir'] = args.exp_dir
 
     opts['train_data'] = args.train_data
     opts['start_iteration']=args.start_iteration
+    
+    print("Opt", opts)
     path =opts['exp_dir']
     if os.path.exists(path):
         pass
